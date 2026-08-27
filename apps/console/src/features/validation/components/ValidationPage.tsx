@@ -516,7 +516,7 @@ export function ValidationPage({
         {headerWithCancelError}
         <EmptyState
           compact
-          description="No validation has run yet — it runs automatically once the project's components are deployed to dev and the version's work is done."
+          description="Nothing validated yet. After a build, your software is checked against the acceptance criteria in your spec; results appear here."
         />
       </>
     );

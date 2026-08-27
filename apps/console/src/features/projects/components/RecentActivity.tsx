@@ -69,7 +69,7 @@ export function RecentActivity({ projectName }: { projectName: string }) {
           bordered
           icon={<Activity size={28} />}
           title="No activity yet"
-          description="Publish the plan and start a build — agents report progress here as they work."
+          description="Agents report what they are doing here as they work."
         />
       ) : (
         <Box sx={{ mt: 1 }}>

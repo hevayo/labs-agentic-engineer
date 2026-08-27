@@ -221,6 +221,11 @@ describe("BuildsPage — one version's story", () => {
   it("invites the first build when there is none", () => {
     renderPage();
     expect(screen.getByText(/No builds yet/)).toBeInTheDocument();
+    // The empty state offers the action rather than narrating the flow (#577):
+    // Build lives on the spec view, so the CTA takes the user there.
+    expect(
+      screen.getByRole("link", { name: "Go to the spec" }),
+    ).toHaveAttribute("href", "/projects/acme/spec");
   });
 
   it("defaults to the newest version, not to a ledger list", () => {
