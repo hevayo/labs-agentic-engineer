@@ -32,10 +32,10 @@ import { activityFeed } from "../fixtures/activity";
 type ActivityScenario = "empty" | "some" | "error";
 
 function activityScenario(): ActivityScenario {
-  const chosen = localStorage.getItem(
-    "aep:mock:activity",
-  ) as ActivityScenario | null;
-  if (chosen) return chosen;
+  const chosen = localStorage.getItem("aep:mock:activity");
+  if (chosen === "empty" || chosen === "some" || chosen === "error") {
+    return chosen;
+  }
   return localStorage.getItem("aep:mock:project") === "fresh"
     ? "empty"
     : "some";
