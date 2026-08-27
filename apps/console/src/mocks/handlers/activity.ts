@@ -25,9 +25,15 @@ import { activityFeed } from "../fixtures/activity";
 // treats that as a clean end and reconnects (matching prod's reconnect
 // behaviour on a dropped connection), but since the seeded read already has
 // every event, no visible gap results.
+// Scenario switch (api-guidelines: mocks must produce the empty state too):
+//   localStorage.setItem('aep:mock:activity', 'empty')
 export const activityHandlers = [
   http.get("*/api/v1/projects/:projectName/activity", () =>
-    HttpResponse.json(activityFeed),
+    HttpResponse.json(
+      localStorage.getItem("aep:mock:activity") === "empty"
+        ? ({ items: [] } satisfies typeof activityFeed)
+        : activityFeed,
+    ),
   ),
 
   http.get("*/api/v1/projects/:projectName/activity/stream", () => {
