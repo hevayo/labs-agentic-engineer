@@ -25,13 +25,12 @@ import {
   CircularProgress,
   Stack,
   TextField,
+  Typography,
   type TextFieldProps,
 } from "@wso2/oxygen-ui";
-import { createLink, Link } from "@tanstack/react-router";
+import { Link } from "@tanstack/react-router";
 import { useQueryClient } from "@tanstack/react-query";
-import { ListChecks } from "@wso2/oxygen-ui-icons-react";
 import { PageHeader } from "../../../components/PageHeader";
-import { EmptyState } from "../../../components/EmptyState";
 import { useAllTasks } from "../../tasks/api/queries";
 import { taskKeys } from "../../tasks/api/keys";
 import { partitionIssues } from "../../tasks/lib/issueRows";
@@ -43,8 +42,6 @@ import { EarlierSessions } from "./EarlierSessions";
 import { MilestonePanel } from "./MilestonePanel";
 import { RunHistoryList } from "./RunHistoryList";
 import { RunStory } from "./RunStory";
-
-const LinkButton = createLink(Button);
 
 /**
  * The Builds page is ONE VERSION'S STORY, latest by default.
@@ -201,20 +198,10 @@ export function BuildsPage({
     return (
       <>
         <PageHeader title="Builds" backTo={backTo} />
-        <EmptyState
-          icon={<ListChecks size={48} />}
-          title="No builds yet"
-          description="A build hands your design to coding agents, which write your components and open pull requests."
-          action={
-            <LinkButton
-              variant="contained"
-              to="/projects/$projectName/spec"
-              params={{ projectName }}
-            >
-              Go to the spec
-            </LinkButton>
-          }
-        />
+        <Typography variant="body2" color="text.secondary" sx={{ py: 3 }}>
+          No builds yet — publish your spec and click Build in the spec view to
+          start the first one.
+        </Typography>
       </>
     );
   }
