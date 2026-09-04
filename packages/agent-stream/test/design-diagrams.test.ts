@@ -258,3 +258,11 @@ test("the skill's worked example passes the gate as written", () => {
   const example = `# Submit a claim\n\nAn Employee submits a claim; the Line Manager approves.\n\n\`\`\`mermaid\nsequenceDiagram\n    actor Employee\n    actor LineManager as Line Manager\n    participant expense-webapp\n    participant expense-api\n\n    Employee->>expense-webapp: submit claim (amount, receipt)\n    expense-webapp->>expense-api: create claim\n    alt no receipt\n        expense-api-->>expense-webapp: refused\n    else\n        expense-api-->>expense-webapp: created\n    end\n    LineManager->>expense-webapp: approve\n\`\`\`\n`;
   assert.equal(checkDesignDiagram(FLOW, example, bundle()), null);
 });
+
+test("the repair guidance keeps the declaration's own keyword", () => {
+  const bad = flow(`sequenceDiagram\n    participant Order Service\n`);
+  const p = checkDesignDiagram(FLOW, bad, bundle());
+  assert.match(p!.message, /declare `participant OrderService as Order Service`/);
+  const badCreate = flow(`sequenceDiagram\n    create participant Order Service\n`);
+  assert.match(checkDesignDiagram(FLOW, badCreate, bundle())!.message, /declare `create participant OrderService as Order Service`/);
+});

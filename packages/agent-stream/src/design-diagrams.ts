@@ -126,7 +126,7 @@ const OPENERS = /^(alt|opt|loop|par|critical|break|rect|box)(\s|$)/;
 // wants one-word ids with the label carried by `as`, so the error must
 // TEACH that — a generic "not a sequence statement" earns a byte-identical
 // retry (seen live: attempt two of a rejected flow was unchanged).
-const SPACED_DECLARE_RE = /^(?:create\s+)?(?:participant|actor)\s+\S+(\s+\S+)+$/;
+const SPACED_DECLARE_RE = /^((?:create\s+)?(?:participant|actor))\s+\S+(?:\s+\S+)+$/;
 const SPACED_MESSAGE_RE = new RegExp(`^(.+?)\\s*(?:${ARROWS})\\s*[+-]?\\s*(.+?)\\s*:`);
 const CONTINUERS = /^(else|and|option)(\s|$)/;
 
@@ -202,12 +202,14 @@ function parseSequence(block: MermaidBlock): SequenceParse {
       participants.add(msg[4] as string);
       continue;
     }
-    if (SPACED_DECLARE_RE.test(text) && !/\sas\s/.test(text)) {
-      const words = text.replace(/^(?:create\s+)?(?:participant|actor)\s+/, "");
+    const spacedDecl = SPACED_DECLARE_RE.exec(text);
+    if (spacedDecl && !/\sas\s/.test(text)) {
+      const keyword = spacedDecl[1] as string;
+      const words = text.slice(keyword.length).trim();
       const oneWord = words.replace(/[^\p{L}\p{N}]+/gu, "");
       diagnostics.push({
         line,
-        message: `\`${text}\` — a name is ONE word; declare \`actor ${oneWord} as ${words}\` and use \`${oneWord}\` in every message`,
+        message: `\`${text}\` — a name is ONE word; declare \`${keyword} ${oneWord} as ${words}\` and use \`${oneWord}\` in every message`,
       });
       continue;
     }
