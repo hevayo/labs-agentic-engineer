@@ -22,6 +22,7 @@ import (
 	"sort"
 
 	"github.com/wso2/aep/aep-api/internal/clients/openchoreo"
+	"github.com/wso2/aep/aep-api/internal/contracts"
 )
 
 // ExternalResourceCatalog is the org-level external-resource registry sourced
@@ -187,6 +188,33 @@ func (c *ExternalResourceCatalog) IsRegistered(ctx context.Context, orgID, name 
 		return false, err
 	}
 	return def != nil, nil
+}
+
+// RegisteredConfigKeys implements spec.ExternalResourceResolver: the org
+// record's config-key schema for a Registered External, nil for a name the
+// catalog does not hold.
+//
+// It is the same read IsRegistered makes; that one throws the definition away,
+// and the keys are exactly what a project's copy of a registered dependency
+// does not have.
+func (c *ExternalResourceCatalog) RegisteredConfigKeys(ctx context.Context, orgID, name string) ([]contracts.ConfigKey, error) {
+	if c == nil {
+		return nil, nil
+	}
+	def, err := c.Get(ctx, orgID, name)
+	if err != nil || def == nil {
+		return nil, err
+	}
+	keys := make([]contracts.ConfigKey, 0, len(def.Config))
+	for _, k := range def.Config {
+		keys = append(keys, contracts.ConfigKey{
+			Key:          k.Key,
+			Secret:       k.Secret,
+			Description:  k.Description,
+			DefaultValue: k.DefaultValue,
+		})
+	}
+	return keys, nil
 }
 
 // newerExternalRT reports whether rt should be preferred over cur as the

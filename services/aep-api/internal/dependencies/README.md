@@ -56,6 +56,7 @@ slices.
 | Port | Dir | Peer · contract |
 |---|---|---|
 | SecretWriter | needs | `platform/secrets` — SM-API vault writes for external-resource secret values |
+| `IsRegistered` · `RegisteredConfigKeys` | offers | `spec` — the design read asks whether a name is in the org catalog and, for one that is, what its config-key schema is. The second is not a convenience: a Registered External's project copy carries no keys, so the wiring derivation and the RT authoring both read the org record through this port |
 | OC `Resource`/`ResourceReleaseBinding` CRUD · `ClusterResourceType` discovery | needs | `openchoreo` client — OC is the store |
 | WorkloadDepSource | needs | `openchoreo` client — deployed Workload consumer refs (resource + endpoint) for Overview `list-workload-dependencies`; GetResource 404s are dangling and omitted |
 | ExecutionStore (admit/finish) | needs | `delivery` — a gate's provisioning run is the last remaining execution row, and this is its write surface |

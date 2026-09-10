@@ -92,6 +92,16 @@ func (s *ArtifactStore) SetOrgServiceResolver(r OrgServiceResolver) {
 // by the composition root via SetExternalResourceResolver.
 type ExternalResourceResolver interface {
 	IsRegistered(ctx context.Context, orgID, name string) (bool, error)
+	// RegisteredConfigKeys returns the org record's config-key schema for a
+	// registered name, nil for one it does not hold.
+	//
+	// A Registered External's project definition deliberately carries no
+	// `config`: the keys live on the org record, which IS the registry
+	// (ADR-0009). Everything downstream nonetheless needs them — the wiring
+	// derivation turns them into the env-var names the coding agent codes
+	// against, and provisioning authors the resource type from them — so the
+	// read that marks the dependency registered brings its schema along.
+	RegisteredConfigKeys(ctx context.Context, orgID, name string) ([]ConfigKey, error)
 }
 
 // SetExternalResourceResolver wires the org external-resource catalog used to
@@ -279,6 +289,7 @@ func (s *ArtifactStore) resolveExternalDependencies(ctx context.Context, orgID s
 		return
 	}
 	hits := map[string]bool{}
+	keyCache := map[string][]ConfigKey{}
 	for i := range d.Components {
 		for j := range d.Components[i].Dependencies {
 			dep := &d.Components[i].Dependencies[j]
@@ -299,10 +310,39 @@ func (s *ArtifactStore) resolveExternalDependencies(ctx context.Context, orgID s
 					}
 					hits[dep.Name] = registryHit
 				}
+				// A registered dependency's keys live on the org record, so the
+				// project's copy carries none. Bring them in: without them the
+				// wiring derivation stamps nothing (no env-var names for the
+				// coding agent) and provisioning cannot author the resource
+				// type at all.
+				if registryHit && len(dep.Config) == 0 {
+					if keys := s.registeredKeys(ctx, orgID, dep.Name, keyCache); len(keys) > 0 {
+						dep.Config = keys
+					}
+				}
 			}
 			ApplyDependencyStatus(dep, registryHit, OrgServiceHit{})
 		}
 	}
+}
+
+// registeredKeys reads one registered name's config-key schema, memoised for
+// the design being assembled: a dependency several components share is one
+// catalog read, not one per edge. A failure is a warning and no keys — the
+// design still reads, and the shortfall surfaces where it matters (an absent
+// wiring is the coding agent's reportable fault) rather than as a failed read.
+func (s *ArtifactStore) registeredKeys(ctx context.Context, orgID, name string, cache map[string][]ConfigKey) []ConfigKey {
+	if cached, ok := cache[name]; ok {
+		return cached
+	}
+	keys, err := s.externals.RegisteredConfigKeys(ctx, orgID, name)
+	if err != nil {
+		slog.WarnContext(ctx, "external-resource resolver: registered config keys failed",
+			"org", orgID, "dependency", name, "error", err)
+		keys = nil
+	}
+	cache[name] = keys
+	return keys
 }
 
 // ---- Helpers ------------------------------------------------------------

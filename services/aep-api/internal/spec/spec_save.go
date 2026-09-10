@@ -182,16 +182,16 @@ func (s *artifactService) SaveSpec(ctx context.Context, orgID, projectID string,
 	}, nil
 }
 
-// ValidateSpecAtTag re-runs the whole-spec hard gate on the tree a `v<N>` tag
+// ValidateSpecAtTag re-runs the whole-spec hard gate on the tree a version tag
 // names — the dev workflow's defensive re-check that what it is about to plan
 // from is buildable.
 func (s *artifactService) ValidateSpecAtTag(ctx context.Context, orgID, projectID, tag string) error {
-	if _, ok := parseRequirementsTag(tag); !ok {
-		return fmt.Errorf("%w: %q is not a v<N> tag", ErrInvalidVersionTag, tag)
-	}
 	_, ref, err := s.readyRef(ctx, orgID, projectID)
 	if err != nil {
 		return err
+	}
+	if verr := s.requireVersionTag(ctx, ref, tag); verr != nil {
+		return verr
 	}
 	reqFiles, err := s.readBundleAtTag(ctx, ref, tag, requirementsPrefix, requirementsBundleFilter)
 	if err != nil {

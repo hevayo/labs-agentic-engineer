@@ -127,6 +127,22 @@ func versionTags(tags []sourcecontrol.TagInfo) []sourcecontrol.TagInfo {
 	return out
 }
 
+// knownVersionTag reports whether `tag` names one of the project's versions.
+//
+// It is what the read-at-tag paths ask now. They used to ask whether the name
+// parsed as `v<N>`, which was the same question while the platform chose the
+// name — and became the wrong one the moment the user could: a version called
+// `m1` cut cleanly and then could not be read back, so its build failed at the
+// roles gate with "not a v<N> spec tag".
+func knownVersionTag(tags []sourcecontrol.TagInfo, tag string) bool {
+	for _, t := range tags {
+		if t.Name == tag && isVersionTag(t) {
+			return true
+		}
+	}
+	return false
+}
+
 // latestVersionTag returns the newest version, or ok=false when the project has
 // never been built.
 func latestVersionTag(tags []sourcecontrol.TagInfo) (sourcecontrol.TagInfo, bool) {

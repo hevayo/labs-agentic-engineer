@@ -158,6 +158,19 @@ the genai turn engine (runner/broker/sweeper), and the files / design / skills s
   number parsed out of a name. A supplied name is used verbatim: a collision is `ErrVersionNameTaken`
   (the build maps it to 409), never a quietly different tag. Only a name the platform itself suggested
   is recomputed past a racing pusher.
+- **Every read-at-tag asks whether the tag is a VERSION, never whether it is numbered**
+  (`requireVersionTag`). `GetDesignAtSpecTag`, `GetRequirementsAtTag` and `ValidateSpecAtTag` guard so
+  that a legacy `v<N>-<M>` design tag or a typo says so rather than surfacing as a missing tree — but
+  the check is membership in the project's version tags, resolved from the local mirror first. Asking
+  for a number instead is what made a version called `m1` cut cleanly and then fail its own build at
+  the roles gate.
+- **A Registered External arrives carrying the org record's config keys.** Its project definition
+  deliberately has none — the org `ResourceType` IS the registry (ADR-0009) — so the design read that
+  marks the dependency registered also fills its `Config` from the catalog
+  (`ExternalResourceResolver.RegisteredConfigKeys`). Everything downstream is built on those keys: the
+  wiring derivation turns them into the env-var names the coding agent binds, and provisioning authors
+  the resource type from them. Without them the build fails with "at least one config key required"
+  and the component's `design.json` carries no wiring at all.
 - **A name labels a snapshot; it does not make one.** `SaveSpec` still compares the whole `specs/` tree
   with the newest version's and reuses that version when they match — the requested name is ignored on
   that path, because cutting a second tag over an identical tree would spend a planning turn to change

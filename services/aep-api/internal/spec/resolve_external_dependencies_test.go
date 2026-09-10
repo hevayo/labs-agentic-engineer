@@ -26,7 +26,10 @@ import (
 // lists catalog hits; `err` forces a resolver error for fail-open tests.
 type fakeExternalResourceResolver struct {
 	names map[string]bool
-	err   error
+	// keys is the org record's schema per registered name — what a project's
+	// copy of a Registered External deliberately does not carry.
+	keys map[string][]ConfigKey
+	err  error
 }
 
 func (f fakeExternalResourceResolver) IsRegistered(_ context.Context, _, name string) (bool, error) {
@@ -34,6 +37,13 @@ func (f fakeExternalResourceResolver) IsRegistered(_ context.Context, _, name st
 		return false, f.err
 	}
 	return f.names[name], nil
+}
+
+func (f fakeExternalResourceResolver) RegisteredConfigKeys(_ context.Context, _, name string) ([]ConfigKey, error) {
+	if f.err != nil {
+		return nil, f.err
+	}
+	return f.keys[name], nil
 }
 
 // TestResolveExternalDependencies_AppliesStoredRules asserts that with no

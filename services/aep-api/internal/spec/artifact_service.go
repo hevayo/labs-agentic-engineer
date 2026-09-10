@@ -290,12 +290,12 @@ func (s *artifactService) ListDesignFiles(ctx context.Context, orgID, projectID 
 }
 
 func (s *artifactService) GetRequirementsAtTag(ctx context.Context, orgID, projectID, tag string) (map[string]string, error) {
-	if _, ok := parseRequirementsTag(tag); !ok {
-		return nil, fmt.Errorf("%w: %q is not a v<N> tag", ErrInvalidVersionTag, tag)
-	}
 	_, ref, err := s.readyRef(ctx, orgID, projectID)
 	if err != nil {
 		return nil, err
+	}
+	if verr := s.requireVersionTag(ctx, ref, tag); verr != nil {
+		return nil, verr
 	}
 	return s.readBundleAtTag(ctx, ref, tag, requirementsPrefix, requirementsBundleFilter)
 }
@@ -322,7 +322,7 @@ func (s *artifactService) GetDesignAtTag(ctx context.Context, orgID, projectID, 
 	return s.readBundleAtTag(ctx, ref, tag, designPrefix, designBundleFilter)
 }
 
-// GetDesignAtSpecTag reads the design bundle at a `v<N>` spec tag.
+// GetDesignAtSpecTag reads the design bundle at a SPEC tag.
 //
 // It exists because GetDesignAtTag next door parses its argument as a
 // design-REVISION tag (`v<N>-<M>`, the legacy per-design sequence) and rejects
@@ -330,14 +330,39 @@ func (s *artifactService) GetDesignAtTag(ctx context.Context, orgID, projectID, 
 // consumer to the other method fails on every real build with "not a v<N>-<M>
 // tag" — which is exactly what happened to the roles ensure.
 func (s *artifactService) GetDesignAtSpecTag(ctx context.Context, orgID, projectID, tag string) (map[string]string, error) {
-	if _, ok := parseRequirementsTag(tag); !ok {
-		return nil, fmt.Errorf("%w: %q is not a v<N> spec tag", ErrInvalidVersionTag, tag)
-	}
 	_, ref, err := s.readyRef(ctx, orgID, projectID)
 	if err != nil {
 		return nil, err
 	}
+	if verr := s.requireVersionTag(ctx, ref, tag); verr != nil {
+		return nil, verr
+	}
 	return s.readBundleAtTag(ctx, ref, tag, designPrefix, designBundleFilter)
+}
+
+// requireVersionTag refuses a tag that is not one of this project's versions.
+//
+// The readers guard because handing them the legacy `v<N>-<M>` design tag, or a
+// typo, should say so rather than surface as a missing tree. What they may NOT
+// do is require a number: the name is the user's now (ADR-0030), and a version
+// called `m1` is as real as `v3`. The local mirror answers first — the tag was
+// cut by this platform, usually seconds earlier — and only an unknown name pays
+// for a fetch before being refused.
+func (s *artifactService) requireVersionTag(ctx context.Context, ref sourcecontrol.RepoRef, tag string) error {
+	if tag == "" {
+		return fmt.Errorf("%w: empty tag", ErrInvalidVersionTag)
+	}
+	if tags, err := s.listVersionTagsLocal(ctx, ref); err == nil && knownVersionTag(tags, tag) {
+		return nil
+	}
+	tags, err := s.listVersionTags(ctx, ref)
+	if err != nil {
+		return fmt.Errorf("list tags: %w", err)
+	}
+	if !knownVersionTag(tags, tag) {
+		return fmt.Errorf("%w: %q is not a version of this project", ErrInvalidVersionTag, tag)
+	}
+	return nil
 }
 
 // ----- Versions -----
